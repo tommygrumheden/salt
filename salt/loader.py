@@ -1677,6 +1677,17 @@ class LazyLoader(salt.utils.lazy.LazyDict):
             # Most likely Py 2.7 or some other Python version we don't really support
             pass
 
+        mod_namespace = "{}.{}.{}.{}".format(
+            self.loaded_base_name, self.mod_type_check(fpath), self.tag, name,
+        )
+        if mod_namespace in sys.modules and sys.modules[mod_namespace] is None:
+            # This module was reset to None. Clean it up.
+            log.debug(
+                "Removing '%s' from sys.modules since it was reset to None",
+                mod_namespace,
+            )
+            sys.modules.pop(mod_namespace)
+
         self.loaded_files.add(name)
         fpath_dirname = os.path.dirname(fpath)
         try:
