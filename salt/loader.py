@@ -1809,10 +1809,21 @@ class LazyLoader(salt.utils.lazy.LazyDict):
             sys.path.remove(fpath_dirname)
             self.__clean_sys_path()
 
-        if hasattr(mod, "__opts__"):
-            mod.__opts__.update(self.opts)
-        else:
-            mod.__opts__ = self.opts
+        try:
+            if hasattr(mod, "__opts__"):
+                mod.__opts__.update(self.opts)
+            else:
+                mod.__opts__ = self.opts
+        except Exception as exc:
+            log.error(
+                "Failed to load %r from %r under %r: %s",
+                name,
+                fpath,
+                mod_namespace,
+                exc,
+                exc_info=True,
+            )
+            raise
 
         # pack whatever other globals we were asked to
         for p_name, p_value in self.pack.items():
