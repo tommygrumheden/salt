@@ -1709,22 +1709,6 @@ class LazyLoader(salt.utils.lazy.LazyDict):
             else:
                 desc = self.suffix_map[suffix]
                 # if it is a directory, we don't open a file
-                try:
-                    mod_namespace = ".".join(
-                        (
-                            self.loaded_base_name,
-                            self.mod_type_check(fpath),
-                            self.tag,
-                            name,
-                        )
-                    )
-                except TypeError:
-                    mod_namespace = "{}.{}.{}.{}".format(
-                        self.loaded_base_name,
-                        self.mod_type_check(fpath),
-                        self.tag,
-                        name,
-                    )
                 if suffix == "":
                     # pylint: disable=no-member
                     # Package directory, look for __init__
