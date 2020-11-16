@@ -1252,7 +1252,7 @@ class LazyLoader(salt.utils.lazy.LazyDict):
         self.opts = self.__prep_mod_opts(opts)
 
         self.module_dirs = module_dirs
-        self.tag = tag
+        self.tag = tag.replace(".", "_")
         self._gc_finalizer = None
         if loaded_base_name and loaded_base_name != LOADED_BASE_NAME:
             self.loaded_base_name = loaded_base_name
