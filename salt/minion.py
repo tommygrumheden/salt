@@ -1106,6 +1106,7 @@ class MinionManager(MinionBase):
             s_opts["beacons_leader"] = beacons_leader
             if beacons_leader:
                 beacons_leader = False
+            log.warning("Master is set to '%s', type '%s'", master, type(master))
             minion = self._create_minion_object(
                 s_opts,
                 s_opts["auth_timeout"],
