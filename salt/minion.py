@@ -1111,7 +1111,10 @@ class MinionManager(MinionBase):
                 s_opts["auth_timeout"],
                 False,
                 io_loop=self.io_loop,
-                loaded_base_name="salt.loader.{}".format(s_opts["master"]),
+                loaded_base_name="salt.loader.{}".format(
+                    # If master is set to an ip address, replace the dots by underscores
+                    master.replace(".", "_")
+                ),
                 jid_queue=self.jid_queue,
             )
             self.io_loop.spawn_callback(self._connect_minion, minion)
