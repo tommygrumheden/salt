@@ -1156,8 +1156,10 @@ def _cleanup_module_namespace(loaded_base_name, delete_from_sys_modules=False):
     for name in list(sys.modules):
         if name.startswith(loaded_base_name):
             if delete_from_sys_modules:
+                log.warning("Deleting %r from sys.modules", name)
                 del sys.modules[name]
             else:
+                log.warning("Setting %r to None in sys.modules", name)
                 mod = sys.modules[name]
                 sys.modules[name] = None
                 del mod
@@ -1680,13 +1682,20 @@ class LazyLoader(salt.utils.lazy.LazyDict):
         mod_namespace = "{}.{}.{}.{}".format(
             self.loaded_base_name, self.mod_type_check(fpath), self.tag, name,
         )
-        if mod_namespace in sys.modules and sys.modules[mod_namespace] is None:
-            # This module was reset to None. Clean it up.
-            log.debug(
-                "Removing '%s' from sys.modules since it was reset to None",
+        log.warning("Trying to load %s from: %s", mod_namespace, fpath)
+        if mod_namespace in sys.modules:
+            log.warning(
+                "The module %s exists in sys.modules as: %r",
                 mod_namespace,
+                sys.modules[mod_namespace],
             )
-            sys.modules.pop(mod_namespace)
+            if sys.modules[mod_namespace] is None:
+                # This module was reset to None. Clean it up.
+                log.debug(
+                    "Removing '%s' from sys.modules since it was reset to None",
+                    mod_namespace,
+                )
+                sys.modules.pop(mod_namespace)
 
         self.loaded_files.add(name)
         fpath_dirname = os.path.dirname(fpath)
@@ -1695,17 +1704,22 @@ class LazyLoader(salt.utils.lazy.LazyDict):
             sys.path.append(fpath_dirname)
             if suffix == ".pyx":
                 mod = pyximport.load_module(name, fpath, tempfile.gettempdir())
+                log.warning("Loaded %s as .pyx // Mod: %s", mod_namespace, mod)
             elif suffix == ".o":
                 top_mod = __import__(fpath, globals(), locals(), [])
+                log.warning("Loaded %s as .o // Mod: %s", mod_namespace, mod)
                 comps = fpath.split(".")
                 if len(comps) < 2:
                     mod = top_mod
+                    log.warning("Loaded %s as .o // 1 Mod: %s", mod_namespace, mod)
                 else:
                     mod = top_mod
                     for subname in comps[1:]:
                         mod = getattr(mod, subname)
+                        log.warning("Loaded %s as .o // 2 Mod: %s", mod_namespace, mod)
             elif suffix == ".zip":
                 mod = zipimporter(fpath).load_module(name)
+                log.warning("Loaded %s as .zip // Mod: %s", mod_namespace, mod)
             else:
                 desc = self.suffix_map[suffix]
                 # if it is a directory, we don't open a file
@@ -1738,6 +1752,11 @@ class LazyLoader(salt.utils.lazy.LazyDict):
                     # with the magic dunders we pack into the loaded
                     # modules, most notably with salt-ssh's __opts__.
                     mod = spec.loader.load_module()
+                    log.warning(
+                        "Loaded %s using importlib machinery // Mod: %s",
+                        mod_namespace,
+                        mod,
+                    )
                     # mod = importlib.util.module_from_spec(spec)
                     # spec.loader.exec_module(mod)
                     # pylint: enable=no-member
@@ -1759,6 +1778,11 @@ class LazyLoader(salt.utils.lazy.LazyDict):
                     # with the magic dunders we pack into the loaded
                     # modules, most notably with salt-ssh's __opts__.
                     mod = spec.loader.load_module()
+                    log.warning(
+                        "Loaded %s using importlib machinery // 2 Mod: %s",
+                        mod_namespace,
+                        mod,
+                    )
                     # mod = importlib.util.module_from_spec(spec)
                     # spec.loader.exec_module(mod)
                     # pylint: enable=no-member
@@ -1808,6 +1832,10 @@ class LazyLoader(salt.utils.lazy.LazyDict):
         finally:
             sys.path.remove(fpath_dirname)
             self.__clean_sys_path()
+
+        log.warning(
+            "Loaded %s // Mod: %s // Mod Type: %s", mod_namespace, mod, type(mod)
+        )
 
         try:
             if hasattr(mod, "__opts__"):
